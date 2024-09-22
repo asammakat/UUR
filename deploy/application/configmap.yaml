@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: uur-config
+data:
+  DEBUG: 'True'
+  DB_NAME: 'UUR'
+  DB_HOST: '10.108.117.226' # update this to the cluster ip of the postgres service (kubectl get service)
+  DB_PORT: '5432'

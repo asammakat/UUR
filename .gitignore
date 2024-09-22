@@ -136,3 +136,6 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
+
+# passwords are stored in deploy/ for now keep these local
+deploy/*/secret.yaml

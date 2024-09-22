@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    name: uur
+  name: uur
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: uur
+  template:
+    metadata:
+      labels:
+        name: uur
+    spec:
+      initContainers:
+        - name: collectstatic
+          image: asammakia/uur-container:1.0.6
+          imagePullPolicy: Always
+          command: ["python", "manage.py", "collectstatic", "--noinput"]
+          envFrom:
+            - secretRef: 
+                name: uur-secrets
+            - configMapRef:
+                name: uur-config
+          volumeMounts:
+            - name: staticfiles
+              mountPath: /static/
+              readOnly: false
+      containers:
+      - name: uur
+        image: asammakia/uur-container:1.0.6
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        envFrom:
+          - secretRef:
+              name: uur-secrets
+          - configMapRef:
+              name: uur-config
+        volumeMounts:
+          - name: staticfiles
+            mountPath: /static/
+            readOnly: false
+      - name: nginx
+        image: nginx
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 80 
+            protocol: TCP
+        volumeMounts:
+          - name: nginx-conf
+            mountPath: /etc/nginx/conf.d
+            readOnly: true
+          - name: staticfiles
+            mountPath: /static/
+            readOnly: true
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+        - name: staticfiles
+          emptyDir: {}
+            

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: uur-pv
+  labels: 
+    app: uur
+spec:
+  storageClassName: hostpath
+  persistentVolumeReclaimPolicy: Delete
+  capacity:
+    storage: 500M
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/data/uur"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uur-pvc
+spec:
+  storageClassName: hostpath
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500M
