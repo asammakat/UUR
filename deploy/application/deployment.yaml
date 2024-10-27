@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: collectstatic
-          image: asammakia/uur-container:1.0.6
+          image: asammakia/uur-container:1.0.12
           imagePullPolicy: Always
           command: ["python", "manage.py", "collectstatic", "--noinput"]
           envFrom:
@@ -31,7 +31,7 @@ spec:
               readOnly: false
       containers:
       - name: uur
-        image: asammakia/uur-container:1.0.6
+        image: asammakia/uur-container:1.0.12
         imagePullPolicy: Always
         ports:
           - containerPort: 8000

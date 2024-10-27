@@ -5,5 +5,5 @@ metadata:
 data:
   DEBUG: 'True'
   DB_NAME: 'UUR'
-  DB_HOST: '999.999.999.999' # update this to the cluster ip of the postgres service (kubectl get service)
+  DB_HOST: '10.43.139.183' # update this to the cluster ip of the postgres service (kubectl get service)
   DB_PORT: '5432'

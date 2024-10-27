@@ -5,14 +5,14 @@ metadata:
   labels: 
     app: uur
 spec:
-  storageClassName: hostpath
+  storageClassName: nfs
   persistentVolumeReclaimPolicy: Delete
   capacity:
-    storage: 500M
+    storage: 128Gi
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/mnt/data/uur"
+    path: "/mnt"
 
 ---
 
@@ -21,9 +21,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: uur-pvc
 spec:
-  storageClassName: hostpath
+  storageClassName: nfs
   accessModes:
     - ReadWriteMany
   resources:
     requests:
-      storage: 500M
+      storage: 64Gi
