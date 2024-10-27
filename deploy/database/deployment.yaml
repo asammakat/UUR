@@ -5,7 +5,7 @@ metadata:
   labels:
     app: postgres
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: postgres
@@ -14,6 +14,10 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        runAsUser: 999 # postgres user is id 999
+        runAsGroup: 2000
+        fsGroup: 2000
       containers:
       - name: postgresdb
         image: postgres
@@ -23,10 +27,6 @@ spec:
         env:
           - name: POSTGRES_DB
             value: UUR
-            # valueFrom:
-            #   secretKeyRef:
-            #     name: postgres-secrets
-            #     key: database
           - name: POSTGRES_USER
             valueFrom:
               secretKeyRef:

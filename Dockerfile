@@ -1,7 +1,10 @@
 # Dockerfile
 
-# Official Python runtime as a parent image
-FROM python:3.10
+# Python arm64 runtime as a parent image for RPI deployment
+FROM arm64v8/python:3.10
+
+# This is supposed to stop truncated output when crashes happen
+ENV PYTHONUNBUFFERED=1
 
 # Allow Docker to cache installed dependencies between builds
 COPY requirements.txt requirements.txt
