@@ -18,7 +18,7 @@ environ.Env.read_env()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 # Allow static files app
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -31,7 +31,7 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["uurapi.com"]
+ALLOWED_HOSTS = ["uurapi.com","127.0.0.1","localhost"]
 CSRF_TRUSTED_ORIGINS = ['https://uurapi.com','https://*.127.0.0.1']
 
 # Application definition
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'markdownify.apps.MarkdownifyConfig',
 ]
 
 MIDDLEWARE = [
@@ -58,10 +59,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'UUR.urls'
 
+TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATES_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -132,3 +134,31 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+MARKDOWNIFY = {
+    "default": {
+        "BLEACH": False,
+    }
+}
+
+MARKDOWNIFY_WHITELIST_TAGS = [
+'a',
+'abbr',
+'acronym',
+'b',
+'blockquote',
+'em',
+'h1',
+'h2',
+'h3',
+'h4',
+'h5',
+'h6',
+'i',
+'li',
+'ol',
+'p',
+'pre',
+'strong',
+'ul'
+]

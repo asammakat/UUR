@@ -1,7 +1,7 @@
 # Dockerfile
 
 # Python arm64 runtime as a parent image for RPI deployment
-FROM arm64v8/python:3.10
+FROM --platform=linux/arm64/v8 arm64v8/python:3.10
 
 # This is supposed to stop truncated output when crashes happen
 ENV PYTHONUNBUFFERED=1

@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load markdownify %}
+{% block content %}
+
+<div class="has-text-left mt-6 pb-6 mb-6">
+  <div class="content is-size-6">
+{% markdownify %}
+## Overview
+---
+The aim is to build and maintain a simple Django web application that uses a Postgres database and host it on a Kubernetes cluster provisioned in my home lab that is reachable from the public internet.
+## Objectives
+---
+This project has three goals:
+
+- Gain in-depth experience with Kubernetes
+- Learn about working with hardware
+- Create an iterable web application that we can build and deploy updates to
+## Hardware
+---
+#### Considerations
+The true nature and benefits of Kubernetes stem from it's ability to host one application across multiple distinct hardware devices. As a precursor and proof of concept it is adequate to [provision an always-on Minikube server](https://devopsdirective.com/posts/2020/03/always-on-minikube/) and [deploy the Django app to it](https://www.youtube.com/watch?app=desktop&v=05BwSZ9elYI&ab_channel=Djangoroad), but to accomplish the goal of gaining in-depth experience with Kubernetes it feels paramount that this project be deployed on distinct hardware components.
+#### Raspberry Pi 4
+The cheapest and most reasonable entry-level home lab option seems to be [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/specifications/). The Raspberry Pi 4 seems preferable to the Raspberry Pi 5 because the Raspberry pi 4 seems to be the most commonly used component for similar projects. The Raspberry Pi 4 is also slightly less expensive than the Raspberry Pi 5. Because the hosted application is not expected to require much RAM and because the Raspberry Pi 4 4gb option is roughly $10 less expensive than the 8gb option, the 4gb variety was selected. Because persistent data is not stored on the Kubernetes nodes the data demands of the Kubernetes compute nodes are minimal. As such each Raspberry Pi 4 is provisioned with 64gb ssd storage. This is likely overprovisioned and was selected for more flexibility if these components are every used in future projects.
+#### MacBook Pro
+I also had at my disposal an unused 2012 MacBook Pro with 1tb of ssd storage. If ever the long-term vision of this project were to manifest it is possible that we might need to store a relatively (compared to the 64gb ssd cards in the Raspberry Pi 4) large amount of data and so this seems like the correct option for our persistent storage device. Initially it was considered that the MacBook Pro could be one of the worker nodes, but this was not viable because the MacBook Pro uses x_84 architecture while the Raspberry Pi 4 use aarch64, and the containers that host the application are architecture specific.
+## Software
+---
+#### K3s 
+The [K3s](https://k3s.io/) Kubernetes distribution is a lightweight Kubernetes distribution that supports ARM64 architecture and so is congruent with hardware decisions.
+#### Django
+The [Django](https://www.djangoproject.com/) Python web application framework is simple and easy to build and will support the demands of the iterable web application we hope to build. 
+## The Django Application
+---
+This is not (yet) a web development project and so a simple application is all that is needed as long as it has persistent data storage demands. As such the first iteration of the web application was a simple api backend built in Django. This allowed for two operations:
+
+- Users can get data from the `/quotes/` endpoint which will serve a list of quotes in json.
+- Admins can manage the quotes that are served by hitting the `/admin/` endpoint and adding or removing quotes.
+
+This was sufficient for the purposes of creating a minimal application that can be deployed to a K3s cluster. Once it was clear that this deployment was stable, the application was augmented to add a homepage with this description. Having achieved the goal of hosting an iterable web application, the only factors limiting further augmentation are my own time, patience, and creativity.
+## The K3s Cluster
+---
+To Provision the K3s cluster I needed to acquire three Rasbperry Pi 4 units and install Raspbian OS on them. One of these machines was selected as a control plane and the other two were selected as worker nodes. After the machines were set up with the appropriate operating system K3s could be installed on them.
+### Activate The `cgroup` On The Nodes
+We need to activate the cgroup for k3s to work
+
+- `sudo vim /boot/firmware/cmdline.txt` (on an older system this might be `sudo vim /boot/cmdline.txt`)
+- This should be a file with a single line, add the following to the end of that line `cgroup_memory=1 cgroup_enable=memory`
+- reboot the machine `sudo reboot`
+
+```
+console=serial0,115200 console=tty1 root=PARTUUID=93b3735c-02 rootfstype=ext4 fsck.repair=yes rootwait cgroup_memory=1 cgroup_enable=memory
+```
+### Install K3s on Control Plane Node
+- On the control plane node run `curl -sfL https://get.k3s.io | sh -` 
+### Install K3s On Worker Nodes And Launch Agent
+We need to install k3s on the machine that will be the worker nodes.
+
+- Grab the `NODE_TOKEN` from `/var/lib/rancher/k3s/server/node-token` on the controller node
+- On each worker node run `curl -sfL https://get.k3s.io | K3S_URL=https://<ip-of-k3s-controller>:6443 K3S_TOKEN=NODE_TOKEN sh -`
+## Persistent Data Storage
+---
+One of the trickier elements of implementing this project was figuring out how to manage persistent data storage. Because Kubernetes pods are ephemeral, when they have persistent storage demands they require a non-ephemeral resource that they can read and write data to. Many options, including cloud storage, were considered, but in the spirit of self hosting I decided that it would be most fun if this resource was provisioned in my home lab. I had an old 2012 MacBook Pro with 1 tb of storage that I was not using and decided to use this machine as a data sore. To do this the best options seemed to set this machine up as a network file system server and mount each of my Kubernetes nodes to it. I wiped the hard drive of the Macbook Pro clean and installed Debian Linux on the machine in preparation for setting it up an an NFS server.
+### NFS Server Setup
+#### Install nfs-kernel-server
+Install software that allows the machine to act as an NFS server
+`sudo apt-get install nfs-kernel-server`
+#### Create Directory To Be Mounted 
+Create a directory that will be mounted to client machines.
+
+- Probably want this as a distinct directory in `mnt/`
+- ex: `sudo mkdir /mnt/uur`
+- If directory is owned by root change it to current admin user `sudo chown adam:adam /mnt/uur` (This will again be changed later)
+
+#### Edit etc/exports
+The `etc/exports` file is where mountable files and their permissions are defined. We need to add the directory we just created to this file by adding the line `/mnt/uur 192.168.4.0/24(rw,sync,all_squash)` to `/etc/exports`.
+
+- Format is `<directory-to-share> <allowed-cidr-block>(permissions)`
+- The `<allowed-cidr-block>` can be `*` to allow all hosts to connect.
+- The [all_squash](https://linux.die.net/man/5/exports) permission maps all user requests to the anonymous uid.
+- If `/etc/exports` does not exist we can create it.  
+
+_etc/exports_
+  
+    # /etc/exports: the access control list for filesystems which may be exported  
+    #               to NFS clients.  See exports(5).  
+    #  
+    # Example for NFSv2 and NFSv3:  
+    # /srv/homes       hostname1(rw,sync,no_subtree_check) hostname2(ro,sync,no_subtree_check)  
+    #  
+    # Example for NFSv4:  
+    # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)  
+    # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)  
+    #  
+    /mnt/uur 192.168.4.0/24(rw,sync,all_squash)  
+
+#### Update The Export Table
+After modifying `/etc/exports` we need to update our export table with the most recent changes.
+`sudo exportfs -ra`
+### NFS Client Setup (Kubernetes nodes)
+#### Install nfs-kernel-common
+Install software that allows the machine to act as an NFS client
+`sudo apt install nfs-common`
+#### Add NFS Server To /etc/fstab
+In order for the machine to mount persistently across reboots we need to add the NFS mount point to the file `/etc/fstab`
+
+- `<ip-addr>:<mount-point-on-server> <mount-point-on-client> <file-system-type> <options> 0 1`
+- ex: `192.168.4.49:/mnt/uur /mnt nfs defaults 0 1`  
+
+_/mnt/uur_
+
+    proc            /proc           proc    defaults          0       0  
+    PARTUUID=a3f161f3-01  /boot/firmware  vfat    defaults          0       2  
+    PARTUUID=a3f161f3-02  /               ext4    defaults,noatime  0       1  
+    # a swapfile is not a swap partition, no line here  
+    #   use  dphys-swapfile swap[on|off]  for that  
+    192.168.4.49:/mnt/uur /mnt nfs defaults 0 1
+
+#### Mount The Directory
+We need to mount the entry we just made in `etc/fstab`
+`sudo mount -a`
+
+- We should now see any test files we created on the server machine in our client mount point and vice versa
+- To unmount use `umount` and specify the mount point `sudo umount /mnt`
+
+NOTE: the `all_squash` setting on the server will prevent the client admin/root user from writing to this mount point. We set `all_squash` for this use case, but if we want to test or if we have a different use case we can change the `all_squash` setting to `no_root_squash`
+### Setup for UUR with self hosted Kubernetes web application
+After installs and testing, The owner for the mount point on the NFS server ie `/mnt/uur` needs to be changed to the postgres user 999. `sudo chown 999:999 /mnt/uur`
+## Networking
+---
+Once the Django application had been deployed and was working from my local network, I needed to make it accessible to users from any network. Using the tools that were provided by my internet service provider (Astound Broadband), I was able to configure a port forward for all requests to my public IP address over port 443 to one of the nodes of the Kubernetes cluster at the correct port for the Kubernetes service. After this was configured and I was able to hit the application using my public IP address from any network, I bought the obscure `uurapi.com` domain and configured it to resolve to my public IP address.
+
+## References
+---
+[Andrew Malkov Tutorial](https://www.youtube.com/watch?app=desktop&v=rOXkutK8ANc&ab_channel=AndrewMalkov)  
+[Deploy Django Application To Minikube](https://www.youtube.com/watch?app=desktop&v=05BwSZ9elYI&ab_channel=Djangoroad)  
+[Django](https://www.djangoproject.com/)  
+[K3s](https://k3s.io/)  
+[K3s Quick Start Guide](https://docs.k3s.io/quick-start)  
+[Provision An Always On Minikube Server To A MacBook Pro](https://devopsdirective.com/posts/2020/03/always-on-minikube/)  
+[Raspberry Pi 4 Specs](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/specifications/)  
+[Raspberry Pi K8s Cluster ( Part 8 ) - How to Build an NFS Server on Raspberry Pi](https://www.youtube.com/watch?v=L97Z5In3KXQ&list=PLZlXrZGK4hBhh_9Z543lG6TEQp-c_E9pv&index=11&ab_channel=The_Sudo)  
+[exports man page](https://linux.die.net/man/5/exports)  
+
+  
+{% endmarkdownify %}
+  </div>
+</div>
+
+{% endblock %}
