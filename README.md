@@ -4,7 +4,7 @@ A simple REST api built with Django for fetching quotes from the inspirational w
 ## Docker image
 ---
 
-Available in a public repo asammakia/uur-container. The most recent version is 1.1.0 .
+Available in a public repo asammakia/uur-container. The most recent version is 1.1.1 .
 
 ## Provision Compute Nodes
 ---
