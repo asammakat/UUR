@@ -3,7 +3,9 @@
 A simple REST api built with Django for fetching quotes from the inspirational work "The You You Are" by Dr Ricken Lazlo Hale, PhD.
 ## Docker image
 ---
+
 Available in a public repo asammakia/uur-container. The most recent version is 1.1.0 .
+
 ## Provision Compute Nodes
 ---
 [Andrew Malkov's Tutorial](https://www.youtube.com/watch?app=desktop&v=rOXkutK8ANc&ab_channel=AndrewMalkov) is a good place to start.
