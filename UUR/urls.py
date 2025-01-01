@@ -16,9 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from quotes import views
+from UUR import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('quotes/', views.get_quotes),
+    path('quotes', views.get_quotes),
+    path('', views.homepage),
+
 ]
