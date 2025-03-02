@@ -3,7 +3,7 @@ kind: PersistentVolume
 metadata:
   name: uur-pv
   labels: 
-    app: uur
+    app: postgres
 spec:
   storageClassName: nfs
   persistentVolumeReclaimPolicy: Delete
